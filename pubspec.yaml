@@ -1,0 +1,75 @@
+name: alflow_pos
+description: ALFlow Kasir - Modern Offline Point of Sale
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Database
+  sqflite: ^2.4.2
+  path: ^1.9.0
+  path_provider: ^2.1.5
+
+  # UI & Fonts
+  google_fonts: ^6.2.1
+  fl_chart: ^0.70.2
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.0.17
+
+  # Utils
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  share_plus: ^13.2.0
+  file_picker: ^12.0.0-beta.7
+  permission_handler: ^11.4.0
+  shared_preferences: ^2.3.5
+  crypto: ^3.0.6
+  pdf: ^3.11.1
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.14
+  riverpod_generator: ^2.6.2
+  custom_lint: ^0.7.5
+  riverpod_lint: ^2.6.2
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png"
