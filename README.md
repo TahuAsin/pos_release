@@ -1,82 +1,114 @@
-# Panduan Lengkap Aplikasi ALFlow POS (Point of Sale)
+# Panduan Lengkap Aplikasi ALFlow Kasir (Point of Sale)
 
-**ALFlow POS** adalah aplikasi kasir pintar berbasis Android yang dirancang khusus untuk mempermudah pencatatan transaksi, manajemen stok, dan pelaporan penjualan secara lokal (Offline-first) tanpa harus selalu terhubung ke internet.
+**ALFlow Kasir** adalah aplikasi kasir pintar berbasis Android yang dirancang khusus untuk mempermudah pencatatan transaksi, manajemen stok, dan pelaporan penjualan secara lokal (Offline-first) tanpa harus selalu terhubung ke internet.
 
 ---
 
 ## 📱 Spesifikasi Aplikasi
-- **Platform**: Android & iOS (Dapat di-_build_ menggunakan Flutter)
+- **Platform**: Android & iOS (Dibatasi pada ekosistem Flutter)
 - **Database**: SQLite (Local Database)
-- **Status Data**: Disimpan secara aman di dalam penyimpanan perangkat HP. Aplikasi di-_build_ dengan keadaan bersih (Nol data) agar pengguna dapat menyusun etalasenya sendiri.
+- **Status Data**: Disimpan secara aman di dalam penyimpanan internal perangkat Anda. Seluruh data (termasuk foto produk, laporan PDF, dan backup) tersimpan 100% offline.
 - **Arsitektur**: Menggunakan Riverpod untuk Manajemen State (*State Management*).
 
 ---
 
 ## 🌟 Deretan Fitur Utama
 
-1. **Sistem Autentikasi (Keamanan)**
-   - **Registrasi & Login**: Pengguna bisa membuat akun Admin dengan aman.
-   - **Ingat Saya**: Fitur untuk menyimpan kredensial agar tidak perlu mengetik _username_ dan _password_ berulang kali.
+1. **Sistem Autentikasi & Pengaturan Akun**
+   - **Registrasi & Login**: Mengamankan akses kasir dengan Username dan Password.
+   - **Pengaturan Akun**: Mengganti Nama Lengkap, Nama Toko, Username, dan Password langsung di dalam aplikasi.
+   - **Mode Gelap (Dark Mode)**: Tampilan nyaman untuk penggunaan di ruangan minim cahaya.
 
 2. **Dashboard (Ringkasan Bisnis)**
-   - Menampilkan total pendapatan harian, mingguan, hingga bulanan.
-   - Menampilkan grafik performa penjualan dan produk terlaris secara visual.
+   - Menampilkan ringkasan Kas (Uang Modal & Penjualan Hari Ini).
+   - Menampilkan total pendapatan, grafik performa penjualan, dan produk terlaris secara visual.
 
-3. **Manajemen Produk & Kategori**
-   - **Tambah & Edit Produk**: Memungkinkan untuk mengisi nama, harga jual, harga modal, jumlah stok, hingga stok minimal (untuk peringatan limit stok).
-   - **Foto Produk**: Setiap produk bisa disematkan foto agar mudah dikenali di menu Kasir.
-   - **Kategori Produk**: Produk dapat dikelompokkan ke dalam berbagai kategori (misal: Makanan, Minuman). Anda dapat menambah atau menghapus kategori.
-   - **Tarik untuk Memperbarui (Pull-to-refresh)**: Cukup usap layar ke bawah untuk memuat ulang data stok dan produk terbaru.
+3. **Sistem Shift Kasir (Buka/Tutup Kasir)**
+   - **Buka Kasir**: Kasir harus memasukkan **Modal Awal** (*Opening Balance*) di laci kasir sebelum bisa memulai transaksi.
+   - **Tutup Kasir**: Menghitung pencocokan jumlah uang fisik aktual di laci dengan sistem. Meminimalisir kebocoran kas toko.
 
-4. **Kasir / Transaksi Pintar**
-   - **Kalkulator Otomatis**: Ketuk produk, maka total belanjaan akan otomatis dihitung.
-   - **Metode Pembayaran Ringkas**: Menyediakan metode **Tunai** dan **QRIS**.
-   - **Cetak Struk/Laporan**: Dapat menghasilkan struk dalam bentuk PDF.
+4. **Manajemen Produk, Kategori, & Stok**
+   - **Tambah & Edit Produk**: Mengisi nama, harga jual, harga modal, jumlah stok, hingga stok minimal (untuk notifikasi stok menipis).
+   - **Kamera / Galeri**: Sematkan foto produk agar kasir mudah mengenali barang di sistem.
+   - **Manajemen Stok Otomatis**: Stok otomatis berkurang setiap ada penjualan, dan Anda dapat memantau produk yang hampir habis di menu "Manajemen Stok".
 
-5. **Riwayat Penjualan (Laporan)**
-   - Mencatat secara otomatis setiap transaksi yang berhasil.
-   - Dilengkapi dengan fitur unduh Laporan Penjualan (PDF Report) untuk audit keuangan.
+5. **Kasir / Transaksi Pintar (Point of Sale)**
+   - **Kalkulator Otomatis**: Ketuk produk, maka total belanjaan akan otomatis dihitung. Mendukung penambahan diskon dan perhitungan otomatis uang kembalian.
+   - **Metode Pembayaran**: Menyediakan metode **Tunai** dan **QRIS**.
 
-6. **Backup & Keamanan Data**
-   - Karena berbasis *offline*, disediakan fitur untuk mencadangkan data (Backup Database) untuk mencegah hilangnya riwayat penjualan dan stok barang.
+6. **Pengeluaran Operasional (Expenses)**
+   - Mencatat pengeluaran harian toko (seperti: bayar listrik, beli galon, gaji karyawan, dll) agar perhitungan Laba Bersih akurat.
+
+7. **Riwayat Penjualan & Laporan Keuangan (PDF)**
+   - **Riwayat Transaksi**: Melihat semua riwayat barang yang laku, dilengkapi fitur **Filter Tanggal** pintar (Hari ini, 7 Hari Terakhir, 30 Hari Terakhir).
+   - **Laporan Keuangan Otomatis**: Menghitung secara otomatis Omset, Harga Pokok Penjualan (HPP), Pengeluaran, Laba Kotor, dan **Laba Bersih**.
+   - **Cetak Laporan PDF**: Unduh laporan keuangan dan riwayat transaksi langsung ke bentuk PDF.
+
+8. **Backup & Restore Database**
+   - Mengamankan data toko Anda dari kerusakan perangkat. Ekspor seluruh *database* (.db) ke memori internal, dan kembalikan (*Restore*) sewaktu-waktu jika Anda berpindah HP.
 
 ---
 
-## 🛠️ Tata Cara Penggunaan Aplikasi
+## 🛠️ Tata Cara Penggunaan Aplikasi (Langkah-langkah Praktis)
 
-### Langkah 1: Pengaturan Awal (Registrasi)
-Karena aplikasi dimulai tanpa data sama sekali (kosong), hal pertama yang harus dilakukan adalah membuat akun Admin.
-1. Saat pertama kali membuka aplikasi, klik tulisan **"Daftar sekarang"** di bagian bawah layar Login.
-2. Isi Username, Password, Nama Lengkap, dan Nama Bisnis Anda.
-3. Klik **Daftar**, kemudian login menggunakan akun yang baru saja dibuat. Anda boleh mencentang **"Ingat saya"** agar _login_ selanjutnya lebih mudah.
+### Langkah 1: Instalasi & Perizinan (Awal)
+1. Saat pertama kali aplikasi di-install dan dibuka, sistem Android akan meminta **Izin Akses File (All files access)**.
+2. Anda **WAJIB** menekan **Izinkan (Allow access to manage all files)**. Ini berfungsi agar aplikasi bisa membuat folder laporan PDF, menyimpan foto produk, dan menyimpan *database backup* di HP Anda.
 
-### Langkah 2: Mengatur Kategori Produk
-Sebelum menginput barang, buatlah keranjangnya terlebih dahulu.
-1. Masuk ke menu **Produk** (di bilah navigasi bawah).
-2. Klik tombol **+ Tambah** atau ikon pensil untuk Edit produk.
-3. Di dalam menu tersebut, pada kolom **Pilih Kategori**, klik **"Tambah Kategori Baru..."**
-4. Ketikkan nama kategorinya (misal: "Minuman") lalu Simpan. (Untuk menghapusnya, pilih kategorinya lalu klik ikon tempat sampah merah).
+### Langkah 2: Registrasi Akun Toko
+Karena aplikasi dimulai tanpa data sama sekali (kosong), buatlah akun Anda:
+1. Klik **"Daftar sekarang"** di bagian bawah layar Login.
+2. Isi Username, Password, Nama Lengkap, dan Nama Toko/Bisnis Anda.
+3. Klik **Daftar**, lalu silakan **Login** dengan akun tersebut.
 
 ### Langkah 3: Menginput Data Produk
-1. Buka kembali menu **Produk**.
-2. Klik tombol **+ Tambah**.
-3. Ketuk ikon Kamera untuk memasukkan foto barang.
-4. Isi kelengkapan datanya: Nama, Harga Jual, Harga Beli/Modal, Stok awal, dan Stok Minimal.
-5. Pilih Kategori yang sesuai.
-6. Klik **Simpan**. (Coba *scroll*/tarik layar ke bawah jika produk tidak langsung muncul untuk me-*refresh* tampilan).
+Sebelum bisa berjualan, Anda harus mengisi etalase toko.
+1. Masuk ke tab **Produk** (di bilah navigasi bawah bagian kotak-kotak).
+2. Klik tombol **+ (Tambah Produk)**.
+3. Anda bisa menambah Kategori (misal: "Minuman") dengan klik "Tambah Kategori Baru...".
+4. Ketuk ikon gambar untuk memotret atau memilih foto produk dari Galeri.
+5. Isi **Harga Jual**, **Harga Beli/Modal** (penting untuk hitung laba/rugi), **Stok Awal**, dan **Stok Minimum**.
+6. Klik **Simpan**.
 
-### Langkah 4: Melakukan Transaksi (Kasir)
-1. Pindah ke menu **Dashboard Utama / Ikon Mesin Kasir** di tengah navigasi bawah.
-2. Anda akan melihat deretan produk beserta foto dan stok tersisa.
-3. Ketuk pada foto produk untuk menambahkannya ke keranjang pelanggan.
-4. Total harga akan muncul. Setelah selesai, klik tombol **Bayar**.
-5. Pilih metode pembayaran: **Tunai** atau **QRIS**.
-6. Konfirmasi pembayaran. Transaksi selesai dan stok barang akan otomatis berkurang dari _database_!
+### Langkah 4: Buka Kasir (Memulai Shift Hari Ini)
+Untuk mencegah transaksi palsu, kasir diwajibkan melakukan pembukaan kas.
+1. Pindah ke tab **Dashboard Utama**.
+2. Klik tombol merah **"Buka Kasir"** di bagian atas layar.
+3. Masukkan jumlah **Modal Awal** (Uang receh/kembalian fisik yang ada di laci saat toko baru buka).
+4. Klik Konfirmasi. Tombol tengah navigasi (ikon Mesin Kasir) sekarang sudah menyala.
 
-### Langkah 5: Mengecek Laporan Penjualan
-1. Pindah ke menu **Riwayat**.
-2. Di sana Anda dapat melihat semua histori barang apa saja yang laku dan kapan terjual.
-3. Anda bisa menggunakan fitur Ekspor/Cetak Laporan ke PDF untuk pencatatan pembukuan bulanan.
+### Langkah 5: Melakukan Transaksi Penjualan
+1. Tekan ikon biru bulat **Mesin Kasir** di tengah menu navigasi bawah.
+2. Ketuk produk yang dibeli pelanggan (tekan berkali-kali untuk menambah jumlah *quantity*).
+3. Klik **Bayar** di bawah layar.
+4. Masukkan jumlah **Uang Diterima** (jika pelanggan bayar tunai), aplikasi akan menghitung otomatis uang **Kembalian**.
+5. Klik **Konfirmasi Pembayaran**. (Stok barang akan otomatis berkurang).
+
+### Langkah 6: Mencatat Pengeluaran Operasional Toko
+Jika ada uang kas yang keluar untuk operasional:
+1. Pergi ke tab **Lainnya** (Pojok kanan bawah).
+2. Pilih menu **Pengeluaran**.
+3. Klik Tambah, lalu isikan nominal, kategori (misal: Listrik/Air), dan Catatannya.
+4. Ini akan memotong Laba Bersih Anda nanti.
+
+### Langkah 7: Mengecek & Mengunduh Laporan Keuangan
+Di akhir hari / bulan, Anda bisa melihat hasilnya:
+1. Pergi ke tab **Lainnya**, lalu pilih **Laporan Keuangan**.
+2. Anda akan melihat grafik penjualan, Laba Kotor, dan Laba Bersih.
+3. Untuk mengekspor dokumennya, klik **ikon PDF** di pojok kanan atas.
+4. Laporan akan tersimpan di dalam folder `Documents/ALFlow_Kasir/` di *File Manager* HP Anda.
+
+### Langkah 8: Tutup Kasir (Akhir Shift)
+Saat toko tutup:
+1. Kembali ke **Dashboard Utama**.
+2. Klik tombol **"Tutup Kasir"** di bagian atas (menggantikan tombol Buka Kasir).
+3. Hitung jumlah uang fisik yang ada di laci Anda secara nyata, lalu masukkan nominal tersebut.
+4. Sistem akan menutup shift dan siap untuk buka toko lagi keesokan harinya.
+
+### Langkah 9: Mengamankan Data (Backup)
+Rutinkan langkah ini seminggu / sebulan sekali:
+1. Pergi ke tab **Lainnya** -> **Backup & Restore**.
+2. Klik **Buat Backup Baru**. File database toko Anda akan aman tersimpan secara fisik di memori HP. Anda bisa mencopy file tersebut ke Google Drive sebagai pengamanan ekstra!
 
 ---
-_Aplikasi dirancang se-intuitif mungkin layaknya aplikasi kasir modern (seperti Moka atau Pawoon), sehingga pegawai kasir yang baru pun dapat memahaminya dalam hitungan menit._
+_Aplikasi ini dirancang se-intuitif mungkin layaknya aplikasi kasir premium, sehingga kasir baru pun dapat memahaminya dalam hitungan menit tanpa pelatihan khusus._
