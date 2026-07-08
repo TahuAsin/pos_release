@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'data/repositories/app_providers.dart';
 import 'features/auth/presentation/login_screen.dart';
@@ -91,18 +93,38 @@ class _SplashWrapperState extends ConsumerState<_SplashWrapper>
     if (!mounted || _navigated) return;
     _navigated = true;
 
+    // Minta izin saat pertama install
+    await _requestPermissionsIfNeeded();
+
+    if (!mounted) return;
     final authState = ref.read(authProvider);
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => authState.isAuthenticated
-              ? const MainShell()
-              : const LoginScreen(),
-          transitionDuration: const Duration(milliseconds: 500),
-          transitionsBuilder: (_, anim, __, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
-      );
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => authState.isAuthenticated
+            ? const MainShell()
+            : const LoginScreen(),
+        transitionDuration: const Duration(milliseconds: 500),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+    );
+  }
+
+  /// Hanya request permission sekali saat pertama install
+  Future<void> _requestPermissionsIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alreadyRequested = prefs.getBool('permissions_requested') ?? false;
+    if (alreadyRequested) return;
+
+    await prefs.setBool('permissions_requested', true);
+
+    // Popup storage permission (READ/WRITE)
+    await Permission.storage.request();
+
+    // MANAGE_EXTERNAL_STORAGE untuk Android 11+ (membuka halaman Settings)
+    final manageStatus = await Permission.manageExternalStorage.status;
+    if (!manageStatus.isGranted) {
+      await Permission.manageExternalStorage.request();
     }
   }
 

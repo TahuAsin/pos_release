@@ -204,9 +204,6 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         if (await Permission.manageExternalStorage.status != PermissionStatus.granted) {
           await Permission.manageExternalStorage.request();
         }
-        if (await Permission.storage.status != PermissionStatus.granted) {
-          await Permission.storage.request();
-        }
       }
 
       final dbPath = await getDatabasesPath();
@@ -219,10 +216,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
 
       Directory? backupDir;
       if (Platform.isAndroid) {
-        backupDir = Directory('/storage/emulated/0/Download/database ALFlow kasir');
+        backupDir = Directory('/storage/emulated/0/Documents/database kasir');
       } else {
         final docDir = await getApplicationDocumentsDirectory();
-        backupDir = Directory('${docDir.path}/database ALFlow kasir');
+        backupDir = Directory('${docDir.path}/database kasir');
       }
 
       if (!await backupDir.exists()) {

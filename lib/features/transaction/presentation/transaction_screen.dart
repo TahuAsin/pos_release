@@ -15,6 +15,9 @@ import '../../../presentation/widgets/app_text_field.dart';
 import '../../../presentation/widgets/shimmer_loading.dart';
 import '../../../presentation/widgets/empty_state.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../history/presentation/history_screen.dart';
+import '../../stock/presentation/stock_screen.dart';
+import '../../products/presentation/products_screen.dart';
 
 // Cart state
 class CartState {
@@ -1104,11 +1107,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       await datasource.createTransaction(transaction);
       ref.read(cartProvider.notifier).clearCart();
+      ref.read(cashRegisterProvider.notifier).updateTotals();
 
-      // Invalidate dashboard
+      // Invalidate all related screens
       ref.invalidate(dashboardSummaryProvider);
       ref.invalidate(weeklySalesProvider);
+      ref.invalidate(topProductsProvider);
       ref.invalidate(kasirProductsProvider);
+      ref.invalidate(productsProvider);
+      ref.invalidate(historyProvider);
+      ref.invalidate(stockProductsProvider);
+      ref.invalidate(lowStockProvider);
 
       if (mounted) {
         _showSuccessDialog(amount - cart.total);

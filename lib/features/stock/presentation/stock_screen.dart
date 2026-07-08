@@ -10,6 +10,8 @@ import '../../../data/models/product_model.dart';
 import '../../../data/repositories/app_providers.dart';
 import '../../../presentation/widgets/empty_state.dart';
 import '../../../presentation/widgets/shimmer_loading.dart';
+import '../../transaction/presentation/transaction_screen.dart';
+import '../../products/presentation/products_screen.dart';
 
 final stockProductsProvider = FutureProvider.autoDispose<List<ProductModel>>((ref) async {
   final datasource = ref.watch(productDatasourceProvider);
@@ -238,7 +240,7 @@ class _StockItemCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: product.stock == 0
                               ? 0
-                              : (product.stock / (product.minStock * 5)).clamp(0.0, 1.0),
+                              : (product.stock / 50).clamp(0.0, 1.0),
                           backgroundColor: stockColor.withValues(alpha: 0.1),
                           valueColor: AlwaysStoppedAnimation<Color>(stockColor),
                           minHeight: 5,
@@ -304,6 +306,9 @@ class _StockItemCard extends StatelessWidget {
                   final newStock = int.tryParse(controller.text) ?? 0;
                   await ref.read(productDatasourceProvider).updateStock(product.id!, newStock);
                   onRefresh();
+                  // Refresh related screens
+                  ref.invalidate(kasirProductsProvider);
+                  ref.invalidate(productsProvider);
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

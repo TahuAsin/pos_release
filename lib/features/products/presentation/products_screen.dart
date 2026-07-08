@@ -15,6 +15,8 @@ import '../../../presentation/widgets/app_button.dart';
 import '../../../presentation/widgets/app_text_field.dart';
 import '../../../presentation/widgets/empty_state.dart';
 import '../../../presentation/widgets/shimmer_loading.dart';
+import '../../transaction/presentation/transaction_screen.dart';
+import '../../stock/presentation/stock_screen.dart';
 
 // Providers
 final selectedCategoryProvider = StateProvider<int?>((ref) => null);
@@ -477,7 +479,6 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
   late TextEditingController _priceController;
   late TextEditingController _costController;
   late TextEditingController _stockController;
-  late TextEditingController _minStockController;
   int? _selectedCategoryId;
   String? _imagePath;
   bool _isSaving = false;
@@ -491,7 +492,6 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
     _priceController = TextEditingController(text: widget.product?.price.toInt().toString() ?? '');
     _costController = TextEditingController(text: widget.product?.costPrice.toInt().toString() ?? '');
     _stockController = TextEditingController(text: widget.product?.stock.toString() ?? '0');
-    _minStockController = TextEditingController(text: widget.product?.minStock.toString() ?? '5');
     _selectedCategoryId = widget.product?.categoryId;
     _imagePath = widget.product?.imagePath;
   }
@@ -502,7 +502,6 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
     _priceController.dispose();
     _costController.dispose();
     _stockController.dispose();
-    _minStockController.dispose();
     super.dispose();
   }
 
@@ -613,7 +612,6 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
         price: double.parse(_priceController.text),
         costPrice: _costController.text.isEmpty ? 0 : double.parse(_costController.text),
         stock: int.parse(_stockController.text),
-        minStock: int.parse(_minStockController.text),
         categoryId: _selectedCategoryId,
         imagePath: _imagePath,
         createdAt: widget.product?.createdAt ?? now,
@@ -628,6 +626,11 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
 
       if (!mounted) return;
       widget.onSaved();
+      // Refresh all related screens
+      ref.invalidate(kasirProductsProvider);
+      ref.invalidate(kasirCategoriesProvider);
+      ref.invalidate(stockProductsProvider);
+      ref.invalidate(lowStockProvider);
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -667,6 +670,11 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
     if (confirm == true) {
       await ref.read(productDatasourceProvider).deleteProduct(widget.product!.id!);
       widget.onSaved();
+      // Refresh all related screens
+      ref.invalidate(kasirProductsProvider);
+      ref.invalidate(kasirCategoriesProvider);
+      ref.invalidate(stockProductsProvider);
+      ref.invalidate(lowStockProvider);
       if (mounted) Navigator.pop(context);
     }
   }
@@ -676,63 +684,63 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final categories = ref.watch(categoriesProvider);
 
-    return Container(
-      margin: const EdgeInsets.only(top: 60),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  isEditing ? AppStrings.editProduct : AppStrings.addProduct,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ),
-                ),
-                const Spacer(),
-                if (isEditing)
-                  IconButton(
-                    onPressed: _delete,
-                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
-                  ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        margin: const EdgeInsets.only(top: 60),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                borderRadius: BorderRadius.circular(2),
               ),
+            ),
+            const SizedBox(height: 16),
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    isEditing ? AppStrings.editProduct : AppStrings.addProduct,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (isEditing)
+                    IconButton(
+                      onPressed: _delete,
+                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                    ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 16),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -797,67 +805,31 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
                     ),
                     const SizedBox(height: AppSizes.md),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            label: AppStrings.productPrice,
-                            hint: '0',
-                            controller: _priceController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            prefixIcon: const Padding(
-                              padding: EdgeInsets.only(left: 12, right: 4),
-                              child: Text('Rp', style: TextStyle(fontWeight: FontWeight.w600)),
-                            ),
-                            validator: (v) {
-                              if (v?.isEmpty == true) return 'Wajib diisi';
-                              if ((double.tryParse(v!) ?? 0) <= 0) return 'Harus > 0';
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppTextField(
-                            label: AppStrings.productCost,
-                            hint: '0',
-                            controller: _costController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            prefixIcon: const Padding(
-                              padding: EdgeInsets.only(left: 12, right: 4),
-                              child: Text('Rp', style: TextStyle(fontWeight: FontWeight.w600)),
-                            ),
-                          ),
-                        ),
-                      ],
+                    AppTextField(
+                      label: AppStrings.productPrice,
+                      hint: '0',
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(left: 12, right: 4),
+                        child: Text('Rp', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      validator: (v) {
+                        if (v?.isEmpty == true) return 'Wajib diisi';
+                        if ((double.tryParse(v!) ?? 0) <= 0) return 'Harus > 0';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: AppSizes.md),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            label: AppStrings.productStock,
-                            hint: '0',
-                            controller: _stockController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            validator: (v) => v?.isEmpty == true ? 'Wajib diisi' : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppTextField(
-                            label: 'Min. Stok',
-                            hint: '5',
-                            controller: _minStockController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          ),
-                        ),
-                      ],
+                    AppTextField(
+                      label: AppStrings.productStock,
+                      hint: '0',
+                      controller: _stockController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (v) => v?.isEmpty == true ? 'Wajib diisi' : null,
                     ),
                     const SizedBox(height: AppSizes.md),
 
@@ -866,7 +838,6 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
                       data: (cats) {
-                        if (cats.isEmpty) return const SizedBox.shrink();
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -936,6 +907,7 @@ class _AddEditProductSheetState extends ConsumerState<AddEditProductSheet> {
           ),
         ],
       ),
+    ),
     );
   }
 }

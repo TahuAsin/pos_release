@@ -9,7 +9,7 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static const String _dbName = 'alflow_pos.db';
-  static const int _dbVersion = 3;
+  static const int _dbVersion = 5;
 
   // Table names
   static const String tableUsers = 'users';
@@ -17,6 +17,8 @@ class DatabaseHelper {
   static const String tableProducts = 'products';
   static const String tableTransactions = 'transactions';
   static const String tableTransactionItems = 'transaction_items';
+  static const String tableCashRegisterSessions = 'cash_register_sessions';
+  static const String tableExpenses = 'expenses';
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -46,11 +48,13 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Drop all tables to reset the database completely
+    // Drop dependent tables first to avoid FOREIGN KEY constraint errors
     await db.execute('DROP TABLE IF EXISTS $tableTransactionItems');
     await db.execute('DROP TABLE IF EXISTS $tableTransactions');
+    await db.execute('DROP TABLE IF EXISTS $tableCashRegisterSessions');
     await db.execute('DROP TABLE IF EXISTS $tableProducts');
     await db.execute('DROP TABLE IF EXISTS $tableCategories');
+    await db.execute('DROP TABLE IF EXISTS $tableExpenses');
     await db.execute('DROP TABLE IF EXISTS $tableUsers');
     
     // Recreate tables without default data
@@ -70,6 +74,38 @@ class DatabaseHelper {
         role TEXT DEFAULT 'cashier',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      )
+    ''');
+
+    // Cash Register Sessions table
+    await db.execute('''
+      CREATE TABLE $tableCashRegisterSessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        opening_amount REAL NOT NULL,
+        closing_amount REAL,
+        expected_amount REAL,
+        total_sales REAL DEFAULT 0,
+        total_transactions INTEGER DEFAULT 0,
+        total_cash_sales REAL DEFAULT 0,
+        total_qris_sales REAL DEFAULT 0,
+        difference REAL,
+        status TEXT DEFAULT 'open',
+        opened_at TEXT NOT NULL,
+        closed_at TEXT,
+        notes TEXT,
+        FOREIGN KEY (user_id) REFERENCES $tableUsers(id)
+      )
+    ''');
+
+    // Expenses table
+    await db.execute('''
+      CREATE TABLE $tableExpenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        description TEXT NOT NULL,
+        amount REAL NOT NULL,
+        expense_date TEXT NOT NULL,
+        created_at TEXT NOT NULL
       )
     ''');
 

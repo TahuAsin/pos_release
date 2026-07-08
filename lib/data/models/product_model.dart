@@ -6,7 +6,6 @@ class ProductModel {
   final double price;
   final double costPrice;
   final int stock;
-  final int minStock;
   final int? categoryId;
   final String? categoryName;
   final String? imagePath;
@@ -22,7 +21,6 @@ class ProductModel {
     required this.price,
     this.costPrice = 0,
     this.stock = 0,
-    this.minStock = 5,
     this.categoryId,
     this.categoryName,
     this.imagePath,
@@ -40,7 +38,6 @@ class ProductModel {
       price: (map['price'] as num).toDouble(),
       costPrice: (map['cost_price'] as num?)?.toDouble() ?? 0.0,
       stock: map['stock'] as int? ?? 0,
-      minStock: map['min_stock'] as int? ?? 5,
       categoryId: map['category_id'] as int?,
       categoryName: map['category_name'] as String?,
       imagePath: map['image_path'] as String?,
@@ -59,7 +56,6 @@ class ProductModel {
       'price': price,
       'cost_price': costPrice,
       'stock': stock,
-      'min_stock': minStock,
       'category_id': categoryId,
       'image_path': imagePath,
       'is_active': isActive ? 1 : 0,
@@ -76,7 +72,6 @@ class ProductModel {
     double? price,
     double? costPrice,
     int? stock,
-    int? minStock,
     int? categoryId,
     String? categoryName,
     String? imagePath,
@@ -92,7 +87,6 @@ class ProductModel {
       price: price ?? this.price,
       costPrice: costPrice ?? this.costPrice,
       stock: stock ?? this.stock,
-      minStock: minStock ?? this.minStock,
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       imagePath: imagePath ?? this.imagePath,
@@ -102,7 +96,7 @@ class ProductModel {
     );
   }
 
-  bool get isLowStock => stock <= minStock;
+  bool get isLowStock => stock <= 10;
   bool get isOutOfStock => stock <= 0;
   double get profit => price - costPrice;
   double get profitMargin => costPrice > 0 ? (profit / costPrice) * 100 : 0;

@@ -11,7 +11,9 @@ import '../../../presentation/widgets/shimmer_loading.dart';
 import '../../transaction/presentation/transaction_screen.dart';
 import '../../products/presentation/products_screen.dart';
 import '../../history/presentation/history_screen.dart';
+import '../../expenses/presentation/expenses_screen.dart';
 import '../../reports/presentation/reports_screen.dart';
+import '../../auth/presentation/account_settings_screen.dart';
 import '../../stock/presentation/stock_screen.dart';
 import '../../backup/presentation/backup_screen.dart';
 import '../../auth/presentation/login_screen.dart';
@@ -299,23 +301,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildQuickSaleCard(BuildContext context) {
+    final cashRegisterState = ref.watch(cashRegisterProvider);
+    final isOpen = cashRegisterState.isOpen;
+    
     return GestureDetector(
       onTap: () {
-        final shell = context.findAncestorStateOfType<_MainShellState>();
-        shell?.setIndex(2);
+        if (isOpen) {
+          _showCloseRegisterDialog(context);
+        } else {
+          _showOpenRegisterDialog(context);
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.secondary, Color(0xFF00A895)],
+          gradient: LinearGradient(
+            colors: isOpen 
+              ? [AppColors.error, const Color(0xFFD32F2F)]
+              : [AppColors.secondary, const Color(0xFF00A895)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(AppSizes.radiusLg),
           boxShadow: [
             BoxShadow(
-              color: AppColors.secondary.withValues(alpha: 0.3),
+              color: (isOpen ? AppColors.error : AppColors.secondary).withValues(alpha: 0.3),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -330,23 +340,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 26),
+              child: Icon(isOpen ? Icons.lock_rounded : Icons.point_of_sale_rounded, color: Colors.white, size: 26),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Buka Kasir',
-                    style: TextStyle(
+                  Text(
+                    isOpen ? 'Tutup Kasir' : 'Buka Kasir',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
-                    'Mulai transaksi baru',
+                    isOpen ? 'Akhiri sesi kasir saat ini' : 'Mulai transaksi baru',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 12,
@@ -355,6 +365,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ),
+            if (isOpen) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('Modal Awal', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                  Text(
+                    CurrencyFormatter.formatCompact(cashRegisterState.session?.openingAmount ?? 0),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+            ],
             Container(
               width: 36,
               height: 36,
@@ -366,6 +389,289 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showOpenRegisterDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Image/Icon
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.secondary, Color(0xFF00A895)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.point_of_sale_rounded, size: 48, color: Colors.white),
+                    SizedBox(height: 8),
+                    Text(
+                      'Buka Kasir',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Mulai Sesi Baru',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Masukkan nominal uang modal awal yang ada di laci kasir saat ini.',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        labelText: 'Nominal Modal Awal',
+                        prefixText: 'Rp ',
+                        prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                        filled: true,
+                        fillColor: AppColors.primaryWithOpacity10,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () async {
+                              final amount = double.tryParse(controller.text) ?? 0;
+                              await ref.read(cashRegisterProvider.notifier).openRegister(amount);
+                              if (mounted) Navigator.pop(ctx);
+                            },
+                            child: const Text('Buka Kasir', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCloseRegisterDialog(BuildContext context) {
+    final controller = TextEditingController();
+    final session = ref.read(cashRegisterProvider).session;
+    if (session == null) return;
+    
+    // We update totals first to get accurate expected amount before showing dialog
+    ref.read(cashRegisterProvider.notifier).updateTotals().then((_) {
+      if (!mounted) return;
+      final updatedSession = ref.read(cashRegisterProvider).session;
+      if (updatedSession == null) return;
+      
+      final expected = updatedSession.calculatedExpectedAmount;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header Image/Icon
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.error, Color(0xFFD32F2F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.lock_rounded, size: 48, color: Colors.white),
+                      SizedBox(height: 8),
+                      Text(
+                        'Tutup Kasir',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceDark : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isDark ? AppColors.borderDark : Colors.grey[300]!),
+                        ),
+                        child: Column(
+                          children: [
+                            _infoRow('Modal Awal', CurrencyFormatter.format(updatedSession.openingAmount)),
+                            _infoRow('Penjualan Tunai', CurrencyFormatter.format(updatedSession.totalCashSales)),
+                            const Divider(height: 24),
+                            _infoRow('Total Kas Seharusnya', CurrencyFormatter.format(expected), isBold: true, color: AppColors.primary),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Validasi Saldo Laci',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Masukkan jumlah uang fisik yang ada di dalam laci kasir saat ini.',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          labelText: 'Uang Fisik Aktual',
+                          prefixText: 'Rp ',
+                          prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error),
+                          filled: true,
+                          fillColor: AppColors.error.withValues(alpha: 0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.error, width: 2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Batal'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                              onPressed: () async {
+                                if (controller.text.isEmpty) return;
+                                final actual = double.tryParse(controller.text) ?? 0;
+                                await ref.read(cashRegisterProvider.notifier).closeRegister(actual, null);
+                                if (mounted) Navigator.pop(ctx);
+                              },
+                              child: const Text('Tutup Kasir', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _infoRow(String label, String value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: isBold ? null : Colors.grey[600])),
+          Text(
+            value, 
+            style: TextStyle(
+              fontSize: 13, 
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -625,15 +931,34 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const ProductsShell(),
-    const TransactionScreen(),
-    const HistoryShell(),
-    const MoreMenuScreen(),
+  final List<Widget> _screens = const [
+    DashboardScreen(),
+    ProductsShell(),
+    TransactionScreen(),
+    HistoryShell(),
+    MoreMenuScreen(),
   ];
 
   void setIndex(int index) {
+    if (index == 2) {
+      final session = ref.read(cashRegisterProvider).session;
+      if (session == null || session.status != 'open') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Akses Ditolak'),
+            content: const Text('Silahkan buka kasir terlebih dahulu untuk memulai transaksi.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Mengerti'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
     setState(() => _currentIndex = index);
   }
 
@@ -686,7 +1011,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, String label) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => setIndex(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -725,7 +1050,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget _buildCenterNavItem() {
     final isSelected = _currentIndex == 2;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = 2),
+      onTap: () => setIndex(2),
       child: Container(
         width: 54,
         height: 54,
@@ -853,6 +1178,9 @@ class MoreMenuScreen extends ConsumerWidget {
               _MenuItem(Icons.inventory_rounded, AppColors.warning, 'Manajemen Stok', () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const StockScreen()));
               }),
+              _MenuItem(Icons.money_off_rounded, AppColors.error, 'Pengeluaran', () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpensesScreen()));
+              }),
               _MenuItem(Icons.backup_rounded, AppColors.success, 'Backup & Restore', () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupScreen()));
               }),
@@ -864,6 +1192,12 @@ class MoreMenuScreen extends ConsumerWidget {
             const SizedBox(height: AppSizes.sm),
 
             _buildMenuSection(context, cardColor, isDark, textPrimary, [
+              _MenuItem(
+                Icons.manage_accounts_rounded, 
+                AppColors.info, 
+                'Pengaturan Akun', 
+                () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountSettingsScreen())),
+              ),
               _MenuItem(
                 isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                 isDark ? AppColors.warning : AppColors.primary,

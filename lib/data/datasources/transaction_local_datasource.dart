@@ -225,4 +225,113 @@ class TransactionLocalDatasource {
       ...profitResults.first,
     };
   }
+
+  Future<List<Map<String, dynamic>>> getProductSalesReport(DateTime start, DateTime end) async {
+    return await _db.rawQuery('''
+      SELECT 
+        ti.product_name,
+        SUM(ti.quantity) as total_qty,
+        SUM(ti.subtotal) as total_revenue,
+        SUM(ti.quantity * p.cost_price) as total_cost,
+        SUM(ti.subtotal - (ti.quantity * p.cost_price)) as total_profit
+      FROM ${DatabaseHelper.tableTransactionItems} ti
+      LEFT JOIN ${DatabaseHelper.tableProducts} p ON ti.product_id = p.id
+      LEFT JOIN ${DatabaseHelper.tableTransactions} t ON ti.transaction_id = t.id
+      WHERE t.created_at >= ? AND t.created_at <= ? AND t.status = 'completed'
+      GROUP BY ti.product_id, ti.product_name
+      ORDER BY total_revenue DESC
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+  }
+
+  Future<Map<String, dynamic>> getProfitLossReport(DateTime start, DateTime end) async {
+    final results = await _db.rawQuery('''
+      SELECT 
+        COALESCE(SUM(total), 0) as total_revenue,
+        COALESCE(SUM(discount), 0) as total_discount
+      FROM ${DatabaseHelper.tableTransactions}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed'
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    final costResults = await _db.rawQuery('''
+      SELECT COALESCE(SUM(ti.quantity * p.cost_price), 0) as total_cogs
+      FROM ${DatabaseHelper.tableTransactionItems} ti
+      LEFT JOIN ${DatabaseHelper.tableProducts} p ON ti.product_id = p.id
+      LEFT JOIN ${DatabaseHelper.tableTransactions} t ON ti.transaction_id = t.id
+      WHERE t.created_at >= ? AND t.created_at <= ? AND t.status = 'completed'
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    final expensesResults = await _db.rawQuery('''
+      SELECT COALESCE(SUM(amount), 0) as total_expenses
+      FROM ${DatabaseHelper.tableExpenses}
+      WHERE expense_date >= ? AND expense_date <= ?
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    final revenue = (results.first['total_revenue'] as num?)?.toDouble() ?? 0.0;
+    final discount = (results.first['total_discount'] as num?)?.toDouble() ?? 0.0;
+    final cogs = (costResults.first['total_cogs'] as num?)?.toDouble() ?? 0.0;
+    
+    final operationalCosts = (expensesResults.first['total_expenses'] as num?)?.toDouble() ?? 0.0;
+    
+    final grossProfit = revenue - cogs;
+    final netProfit = grossProfit - operationalCosts;
+
+    return {
+      'revenue': revenue,
+      'discount': discount,
+      'cogs': cogs,
+      'gross_profit': grossProfit,
+      'operational_costs': operationalCosts,
+      'net_profit': netProfit,
+    };
+  }
+
+  Future<Map<String, dynamic>> getBalanceSheetData() async {
+    // Assets = Cash in Register + Inventory Value
+    // We assume the cash in register is the sum of opening amount + cash sales from the active session
+    // Or if we want all time, it's complex without an actual bank/cash account table.
+    // So for the Balance Sheet, we'll calculate:
+    // 1. Inventory Value = sum(stock * cost_price)
+    // 2. Cash = Active session expected amount (or just total cash ever if we want, but let's do active session cash for now, or maybe just total_profit as retained earnings)
+    
+    // Inventory Value
+    final invResults = await _db.rawQuery('''
+      SELECT COALESCE(SUM(stock * cost_price), 0) as inventory_value
+      FROM ${DatabaseHelper.tableProducts}
+      WHERE is_active = 1
+    ''');
+    
+    final inventoryValue = (invResults.first['inventory_value'] as num?)?.toDouble() ?? 0.0;
+
+    // Total Retained Earnings (All time Net Profit)
+    final profitResults = await _db.rawQuery('''
+      SELECT 
+        COALESCE(SUM(ti.subtotal - (ti.quantity * p.cost_price)), 0) as retained_earnings
+      FROM ${DatabaseHelper.tableTransactionItems} ti
+      LEFT JOIN ${DatabaseHelper.tableProducts} p ON ti.product_id = p.id
+      LEFT JOIN ${DatabaseHelper.tableTransactions} t ON ti.transaction_id = t.id
+      WHERE t.status = 'completed'
+    ''');
+    
+    final retainedEarnings = (profitResults.first['retained_earnings'] as num?)?.toDouble() ?? 0.0;
+    
+    // Initial capital (sum of all positive cash register differences, or just a dummy value for now)
+    // For simplicity:
+    final capital = retainedEarnings; // Assuming starting capital was 0 for goods, all generated through profit
+    
+    // Since Assets = Liabilities + Equity
+    // We'll say Assets (Inventory + Cash)
+    // Equity = Retained Earnings + Initial Capital
+    
+    final cash = retainedEarnings - inventoryValue; // Simplified assumption: profit not in inventory is in cash. 
+    // Wait, if cash < 0, that means we owe money. We'll just display it.
+
+    return {
+      'assets_cash': cash > 0 ? cash : 0.0,
+      'assets_inventory': inventoryValue,
+      'total_assets': (cash > 0 ? cash : 0.0) + inventoryValue,
+      'liabilities': 0.0, // No liabilities tracked
+      'equity_retained_earnings': retainedEarnings,
+      'total_equity': retainedEarnings,
+    };
+  }
 }

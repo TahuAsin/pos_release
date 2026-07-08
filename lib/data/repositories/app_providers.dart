@@ -4,7 +4,10 @@ import '../../core/database/database_helper.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/product_local_datasource.dart';
 import '../../data/datasources/transaction_local_datasource.dart';
+import '../../data/datasources/cash_register_datasource.dart';
+import '../../data/datasources/expense_local_datasource.dart';
 import '../../data/models/user_model.dart';
+import '../../data/models/cash_register_model.dart';
 
 // Core providers
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
@@ -20,12 +23,20 @@ final authDatasourceProvider = Provider<AuthLocalDatasource>((ref) {
   return AuthLocalDatasource(ref.watch(databaseHelperProvider));
 });
 
+final expenseDatasourceProvider = Provider<ExpenseLocalDatasource>((ref) {
+  return ExpenseLocalDatasource();
+});
+
 final productDatasourceProvider = Provider<ProductLocalDatasource>((ref) {
   return ProductLocalDatasource(ref.watch(databaseHelperProvider));
 });
 
 final transactionDatasourceProvider = Provider<TransactionLocalDatasource>((ref) {
   return TransactionLocalDatasource(ref.watch(databaseHelperProvider));
+});
+
+final cashRegisterDatasourceProvider = Provider<CashRegisterDatasource>((ref) {
+  return CashRegisterDatasource(ref.watch(databaseHelperProvider));
 });
 
 // Auth state
@@ -142,6 +153,49 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> updateUser({
+    required String fullName,
+    String? businessName,
+    required String username,
+    String? password,
+  }) async {
+    final currentUser = state.user;
+    if (currentUser == null) return false;
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      if (username != currentUser.username) {
+        final isTaken = await _datasource.isUsernameTaken(username);
+        if (isTaken) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Username sudah digunakan',
+          );
+          return false;
+        }
+      }
+
+      final updatedUser = currentUser.copyWith(
+        fullName: fullName,
+        businessName: businessName,
+        username: username,
+        password: (password != null && password.isNotEmpty) ? password : currentUser.password,
+        updatedAt: DateTime.now(),
+      );
+
+      await _datasource.updateUser(updatedUser);
+      state = state.copyWith(user: updatedUser, isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Terjadi kesalahan: $e',
+      );
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _prefs?.remove('user_id');
     state = const AuthState();
@@ -150,6 +204,79 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref.watch(authDatasourceProvider));
+});
+
+// Cash Register State
+class CashRegisterState {
+  final CashRegisterSession? session;
+  final bool isLoading;
+
+  const CashRegisterState({this.session, this.isLoading = false});
+
+  CashRegisterState copyWith({
+    CashRegisterSession? session,
+    bool? isLoading,
+    bool clearSession = false,
+  }) {
+    return CashRegisterState(
+      session: clearSession ? null : (session ?? this.session),
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+
+  bool get isOpen => session != null && session!.isOpen;
+}
+
+class CashRegisterNotifier extends StateNotifier<CashRegisterState> {
+  final CashRegisterDatasource _datasource;
+  SharedPreferences? _prefs;
+
+  CashRegisterNotifier(this._datasource) : super(const CashRegisterState()) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    _prefs = await SharedPreferences.getInstance();
+    await checkSession();
+  }
+
+  Future<void> checkSession() async {
+    final userId = _prefs?.getInt('user_id');
+    if (userId != null) {
+      final session = await _datasource.getActiveSession(userId);
+      state = state.copyWith(session: session, clearSession: session == null);
+    }
+  }
+
+  Future<void> openRegister(double amount) async {
+    final userId = _prefs?.getInt('user_id');
+    if (userId == null) return;
+    
+    state = state.copyWith(isLoading: true);
+    final session = await _datasource.openSession(userId, amount);
+    state = state.copyWith(session: session, isLoading: false);
+  }
+
+  Future<void> closeRegister(double closingAmount, String? notes) async {
+    final sessionId = state.session?.id;
+    if (sessionId == null) return;
+
+    state = state.copyWith(isLoading: true);
+    await _datasource.closeSession(sessionId, closingAmount, notes);
+    state = state.copyWith(clearSession: true, isLoading: false);
+  }
+  
+  Future<void> updateTotals() async {
+    final sessionId = state.session?.id;
+    if (sessionId != null) {
+      await _datasource.updateSessionTotals(sessionId);
+      await checkSession(); // reload updated session
+    }
+  }
+}
+
+final cashRegisterProvider = StateNotifierProvider<CashRegisterNotifier, CashRegisterState>((ref) {
+  return CashRegisterNotifier(ref.watch(cashRegisterDatasourceProvider));
 });
 
 // Theme state

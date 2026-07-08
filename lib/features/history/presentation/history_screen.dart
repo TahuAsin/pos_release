@@ -11,9 +11,17 @@ import '../../../presentation/widgets/empty_state.dart';
 import '../../../presentation/widgets/shimmer_loading.dart';
 import '../../../core/services/pdf_report_service.dart';
 
+final historyFilterDateProvider = StateProvider.autoDispose<DateTimeRange?>((ref) => null);
+
 final historyProvider = FutureProvider.autoDispose<List<TransactionModel>>((ref) async {
   final datasource = ref.watch(transactionDatasourceProvider);
-  return await datasource.getTransactions(limit: 50);
+  final dateRange = ref.watch(historyFilterDateProvider);
+  
+  return await datasource.getTransactions(
+    limit: 100,
+    startDate: dateRange?.start,
+    endDate: dateRange?.end,
+  );
 });
 
 class HistoryScreen extends ConsumerWidget {
@@ -68,9 +76,58 @@ class HistoryScreen extends ConsumerWidget {
               }
             },
           ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list_rounded),
-            onPressed: () {},
+            tooltip: 'Filter Tanggal',
+            onSelected: (value) {
+              final now = DateTime.now();
+              DateTimeRange? newRange;
+
+              switch (value) {
+                case 'today':
+                  newRange = DateTimeRange(
+                    start: DateTime(now.year, now.month, now.day),
+                    end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+                  );
+                  break;
+                case 'week':
+                  newRange = DateTimeRange(
+                    start: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6)),
+                    end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+                  );
+                  break;
+                case 'month':
+                  newRange = DateTimeRange(
+                    start: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29)),
+                    end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+                  );
+                  break;
+                case 'all':
+                default:
+                  newRange = null;
+                  break;
+              }
+
+              ref.read(historyFilterDateProvider.notifier).state = newRange;
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'all',
+                child: Text('Semua Transaksi'),
+              ),
+              const PopupMenuItem(
+                value: 'today',
+                child: Text('Hari Ini'),
+              ),
+              const PopupMenuItem(
+                value: 'week',
+                child: Text('7 Hari Terakhir'),
+              ),
+              const PopupMenuItem(
+                value: 'month',
+                child: Text('30 Hari Terakhir'),
+              ),
+            ],
           ),
         ],
       ),
